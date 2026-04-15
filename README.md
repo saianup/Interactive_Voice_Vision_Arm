@@ -1,63 +1,228 @@
-# Interactive Voice-Controlled Object Picking Robot
+#  Voice + Vision Controlled Robotic Arm System
 
-## Overview
-This project integrates **speech recognition (Whisper)**, **computer vision (YOLOv8 + Intel RealSense)**, and **robotic manipulation** to create an interactive system where a user can issue commands such as:
 
-> "Pick up the bottle"
 
-The system performs the following steps:
+##  Project Overview
 
-1. Recognizes the spoken command using Whisper.  
-2. Detects the specified object using YOLOv8.  
-3. Estimates the object's **3D pose** using Intel RealSense depth data.  
-4. (Planned) Sends the detected grasp pose to a manipulator for pick-and-place operations.  
+This project combines **computer vision, voice recognition, and robotic arm control** to create a system where a user can give voice commands (like “pick bottle”), and the robotic arm will detect the object, compute its position, and pick it.
 
-## Current Progress
-- Continuous **voice recognition** implemented using Whisper.  
-- Integrated **YOLOv8 object detection**.  
-- Fused **RealSense depth data** for **3D pose estimation** of detected objects.  
-- Added **interactive confirmation** using text-to-speech (`pyttsx3`).  
 
-### Pending / Next Steps
-- Integrate manipulator control for actual pick-and-place tasks.  
-- Implement grasp pose planning and ROS 2 MoveIt integration.  
-- Enhance natural conversation flow to support multi-command sequences.  
 
-## Tech Stack
-- **Speech Recognition:** OpenAI Whisper  
-- **Object Detection:** Ultralytics YOLOv8  
-- **Depth Camera:** Intel RealSense D435  
-- **Programming:** Python  
-- **Libraries:** `opencv-python`, `sounddevice`, `pyttsx3`, `numpy`, `pyrealsense2`, `ultralytics`  
+##  Files Description
 
-## Installation and Running
+* `all_classes.py`
+  → Main integrated code (Vision + Voice + IK + Arduino control)
 
-### Step 1: Install Dependencies
-Open a terminal and run the following commands:
+* `ike_ang_sol.py`
+  → Standalone inverse kinematics solver
+
+* `object_det.py`
+  → Object detection + 3D coordinate extraction using RealSense
+
+* `voice_noiseless.py`
+  → Wake word detection + speech-to-text
+
+* `motor_fin.ino`
+  → Arduino code for controlling servos of robotic arm
+
+
+
+##  System Requirements
+
+### Hardware Required
+
+* Intel RealSense Camera
+* ESP / Arduino board
+* Robotic arm (3 DOF + gripper)
+* Microphone
+
+
+
+##  Software Requirements
+
+Install the following on your system:
+
+* Python (3.8 to 3.10 recommended)
+* Arduino IDE
+* VS Code (optional but recommended)
+
+
+
+##  Required Python Libraries
+
+Open Command Prompt and install the following:
 
 ```bash
-# Update pip
-python3 -m pip install --upgrade pip
-
-# Install core dependencies
-pip install numpy opencv-python pyttsx3 sounddevice pyrealsense2
-
-# Install Whisper
-pip install git+https://github.com/openai/whisper.git
-
-# Install YOLOv8 (Ultralytics)
+pip install numpy
+pip install opencv-python
 pip install ultralytics
-
-# Optional: Install PyTorch (CPU version, modify if using GPU)
-pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
-
+pip install pyrealsense2
+pip install pyserial
+pip install pvporcupine
+pip install pyaudio
+pip install openai-whisper
+pip install sounddevice
+pip install scipy
+pip install librosa
 ```
 
-### Step 2: Run the Python Script
+
+
+###  Important Fix (PyAudio Issue)
+
+If `pyaudio` fails:
 
 ```bash
-cd src
+pip install pipwin
+pipwin install pyaudio
+```
 
-python3 voice_yolo_realsense.py
+
+
+##  File Path Setup (VERY IMPORTANT)
+
+You MUST update paths in code before running.
+
+### Update YOLO model path:
+
+In your Python files:
+
+```python
+model = YOLO("models/best.pt")
+```
+
+
+### Update Wake Word Path:
+
+```python
+WAKE_WORD_PATH = "wakeword/jarvis.ppn"
+```
+
+
+### Update Serial Port:
+
+```python
+ser = serial.Serial("COM13", 115200, timeout=1)
+```
+
+ Change `"COM13"` to your actual Arduino port
+
+
+##  Arduino Setup
+
+### Step 1: Open Arduino IDE
+
+Open file:
 
 ```
+motor_fin.ino
+```
+
+
+### Step 2: Select Board
+
+* Go to **Tools → Board**
+* Select your ESP / Arduino board
+
+
+### Step 3: Select Port
+
+* Go to **Tools → Port**
+* Select correct COM port
+
+
+### Step 4: Upload Code
+
+Click **Upload**
+
+
+##  Running the Project
+
+### Step 1: Connect Everything
+
+* Connect RealSense camera
+* Connect Arduino board
+* Ensure microphone is working
+
+
+### Step 2: Run Main File
+
+Open terminal in project folder:
+
+```bash
+python all_classes.py
+```
+
+
+##  How the System Works
+
+### 1. Vision
+
+* Camera detects objects using YOLO
+* Depth is used to calculate 3D position
+* Coordinates are converted to robot frame
+
+
+### 2. Voice
+
+* System listens for wake word: **"Jarvis"**
+* Records audio after detection
+* Converts speech to text
+
+
+### 3. Command Processing
+
+* Matches spoken object name with detected objects
+* Extracts object position
+
+
+### 4. Inverse Kinematics
+
+* Converts (x, y, z) → joint angles
+* Angles sent to Arduino
+
+
+### 5. Arm Movement
+
+* Arduino receives commands via serial
+* Moves joints step-by-step
+* Closes gripper
+
+
+##  Example Commands
+
+* "Jarvis pick bottle"
+* "Jarvis grab cube"
+* "Jarvis where is bottle"
+
+
+##  Important Notes
+
+* Make sure camera is stable and calibrated
+* Ensure good lighting for detection
+* Depth accuracy depends on surface quality
+* Serial communication must match correct COM port
+
+
+##  Common Errors & Fixes
+
+### Problem: No objects detected
+
+→ Check model path and camera connection
+
+
+### Problem: Voice not detected
+
+→ Check microphone and wake word file
+
+
+### Problem: Arm not moving
+
+→ Check COM port and Arduino upload
+
+
+### Problem: Wrong positions
+
+→ Adjust translation (tx, ty, tz) in code
+
+
